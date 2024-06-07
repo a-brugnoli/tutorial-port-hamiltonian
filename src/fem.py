@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.sparse import  lil_matrix
 
-def mass_matrix_lagrange(coordinates, density=1):
+
+def mass_matrix_lagrange(coordinates, parameter=1):
 
     n_nodes = coordinates.shape[0]
     n_elements = n_nodes - 1
@@ -14,17 +15,35 @@ def mass_matrix_lagrange(coordinates, density=1):
 
     for i in range(n_elements):
         x_left, x_right = coordinates[i], coordinates[i+1]
-        h = x_right - x_left  # Element length
+        element_length = x_right - x_left  # Element length
         midpoint_element = (x_left + x_right) / 2
         for gp, gw in zip(gauss_points, gauss_weights):
-            x_gp = midpoint_element + gp * h / 2
-            N = 1/h * np.array([(x_right - x_gp) , (x_gp - x_left)])
-            M[i:i+2, i:i+2] += density * gw * h / 2 * np.outer(N, N)
+            x_gp = midpoint_element + gp * element_length / 2
+            N_lagrange = 1/element_length * np.array([(x_right - x_gp) , (x_gp - x_left)])
+            M[i:i+2, i:i+2] += parameter * gw * element_length / 2 * np.outer(N_lagrange, \
+                                                                              N_lagrange)
 
     M = M.tocsr()
 
     return M
 
+
+def discrete_gradient(coordinates, parameter):
+    n_nodes = coordinates.shape[0]
+    n_elements = n_nodes - 1
+
+    D = lil_matrix((n_elements, n_nodes))
+
+    for i in range(n_elements):
+        x_left, x_right = coordinates[i], coordinates[i+1]
+        element_length = x_right - x_left  # Element length
+        dN = 1/element_length * np.array([-1, 1])
+
+        D[i, i:i+1] += parameter * dN
+
+    D = D.tocsr()
+
+    return D
 
 def stiffness_matrix_lagrange(coordinates, stiffness=1):
 
