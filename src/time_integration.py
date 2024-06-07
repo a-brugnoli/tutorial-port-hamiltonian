@@ -1,6 +1,6 @@
 import numpy as np
 from src.linear_algebra import solve_bcs, derive_expression
-
+from scipy.sparse.linalg import spsolve
 
 def _valid_bc_keys(dictionary):
     valid_values = {"left", "right"}
@@ -48,35 +48,6 @@ def newmark(q0, v0, M, K, dt, nt, bcs_displacement = {}, gamma=0.5, beta=0.25):
     return q_solution, v_solution
 
 
-def stormer_verlet(var1_0, var2_0, M_2, A_1, A_2, \
-            dt, nt, bcs_essential = {}):
-    
-    var1_solution = np.zeros((nt+1, len(var1_0)))
-    var1_solution[0, :] = var1_0
-
-    var2_solution = np.zeros((nt+1, len(var2_0)))
-    var2_solution[0, :] = var2_0
-
-    var1_old = var1_0
-    var2_old = var2_0
-
-    var2_old_midpoint = var2_old + dt/2 * solve_bcs(M_2, A_2 * var1_old)
-    
-    for n in range(nt):
-        var1_new = var1_old + dt * A_1 @ var2_old_midpoint
-        
-        var2_new_midpoint = var2_old_midpoint + dt * solve_bcs(M_2, A_2 @ var1_new)
-        var2_new = 0.5*(var2_old_midpoint + var2_new_midpoint)
-
-        var1_solution[n+1, :] = var1_new
-        var2_solution[n+1, :] = var2_new
-
-        var1_old = var1_new
-        var2_old_midpoint = var2_new_midpoint
-    
-    return var1_solution, var2_solution
-
-
 def implicit_midpoint(x_0, M, A, dt, nt, bcs_essential = {}):
     x_solution = np.zeros((nt+1, len(x_0)))
     x_solution[0, :] = x_0
@@ -94,3 +65,63 @@ def implicit_midpoint(x_0, M, A, dt, nt, bcs_essential = {}):
         x_old = x_new
 
     return x_solution
+
+
+def stormer_verlet(var1_0, var2_0, M_2, A_1, A_2, \
+            dt, nt, bcs_essential = {}):
+    
+    var1_solution = np.zeros((nt+1, len(var1_0)))
+    var1_solution[0, :] = var1_0
+
+    var2_solution = np.zeros((nt+1, len(var2_0)))
+    var2_solution[0, :] = var2_0
+
+    var1_old = var1_0
+    var2_old = var2_0
+
+    var2_old_midpoint = var2_old + dt/2 * solve_bcs(M_2, A_2 @ var1_old)
+    
+    for n in range(nt):
+        var1_new = var1_old + dt * A_1 @ var2_old_midpoint
+        
+        var2_new_midpoint = var2_old_midpoint + dt * solve_bcs(M_2, A_2 @ var1_new)
+        var2_new = 0.5*(var2_old_midpoint + var2_new_midpoint)
+
+        var1_solution[n+1, :] = var1_new
+        var2_solution[n+1, :] = var2_new
+
+        var1_old = var1_new
+        var2_old_midpoint = var2_new_midpoint
+    
+    return var1_solution, var2_solution
+
+
+def stormer_verlet_dual(var1_0, var2_0, M_2, A_1, A_2, \
+                        dt, nt, bcs_essential = {}):
+    
+    var1_solution = np.zeros((nt+1, len(var1_0)))
+    var1_solution[0, :] = var1_0
+
+    var2_solution = np.zeros((nt+1, len(var2_0)))
+    var2_solution[0, :] = var2_0
+
+    var1_old = var1_0
+    var2_old = var2_0
+
+    var1_old_midpoint = var1_old + dt/2 * A_1 @ var2_old
+    
+    for n in range(nt):
+        var2_new = var2_old + dt * spsolve(M_2, A_2 @ var1_old_midpoint)
+        
+        var1_new_midpoint = var1_old_midpoint + dt * A_1 @ var2_new
+        var1_new = 0.5*(var1_old_midpoint + var1_new_midpoint)
+
+        var1_solution[n+1, :] = var1_new
+        var2_solution[n+1, :] = var2_new
+
+        var2_old = var2_new
+        var1_old_midpoint = var1_new_midpoint
+    
+    return var1_solution, var2_solution
+
+

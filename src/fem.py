@@ -6,7 +6,6 @@ def mass_matrix_lagrange(coordinates, parameter=1):
 
     n_nodes = coordinates.shape[0]
     n_elements = n_nodes - 1
-    # Mass and stiffness matrices
     M = lil_matrix((n_nodes, n_nodes))
 
     # Numerical quadrature (2-point Gauss quadrature)
@@ -15,7 +14,7 @@ def mass_matrix_lagrange(coordinates, parameter=1):
 
     for i in range(n_elements):
         x_left, x_right = coordinates[i], coordinates[i+1]
-        element_length = x_right - x_left  # Element length
+        element_length = x_right - x_left  
         midpoint_element = (x_left + x_right) / 2
         for gp, gw in zip(gauss_points, gauss_weights):
             x_gp = midpoint_element + gp * element_length / 2
@@ -28,7 +27,9 @@ def mass_matrix_lagrange(coordinates, parameter=1):
     return M
 
 
-def discrete_gradient(coordinates, parameter):
+
+
+def discrete_gradient(coordinates):
     n_nodes = coordinates.shape[0]
     n_elements = n_nodes - 1
 
@@ -36,10 +37,10 @@ def discrete_gradient(coordinates, parameter):
 
     for i in range(n_elements):
         x_left, x_right = coordinates[i], coordinates[i+1]
-        element_length = x_right - x_left  # Element length
+        element_length = x_right - x_left  
         dN = 1/element_length * np.array([-1, 1])
 
-        D[i, i:i+1] += parameter * dN
+        D[i, i:i+2] += element_length *  dN
 
     D = D.tocsr()
 
@@ -49,7 +50,7 @@ def stiffness_matrix_lagrange(coordinates, stiffness=1):
 
     n_nodes = coordinates.shape[0]
     n_elements = n_nodes - 1
-    # Mass and stiffness matrices
+
     K = lil_matrix((n_nodes, n_nodes))
 
     for i in range(n_elements):
