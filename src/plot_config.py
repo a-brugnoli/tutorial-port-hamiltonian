@@ -8,7 +8,7 @@ def configure_matplotlib():
     rcParams.update({'figure.autolayout': True, 
                      'text.usetex': True,
                      'text.latex.preamble':r"\usepackage{amsmath}",
-                     'legend.loc':'best',
+                     'legend.loc':'upper right',
                      'font.size': SMALL_SIZE,
                      'axes.titlesize': BIGGER_SIZE,
                      'axes.labelsize': MEDIUM_SIZE,

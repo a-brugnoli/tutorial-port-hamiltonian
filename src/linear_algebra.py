@@ -1,5 +1,5 @@
 from scipy.sparse.linalg import spsolve
-import sympy
+import sympy as sym
 
 def solve_bcs(A, b, bcs : dict = {}):
     if bcs:
@@ -13,7 +13,7 @@ def solve_bcs(A, b, bcs : dict = {}):
 
 
 def derive_expression(exp):
-    t = sympy.symbols('t')
-    exp_simpy = exp(t)
-    dexp_dt = sympy.diff(exp_simpy, t)
-    return sympy.lambdify(t, dexp_dt)
+    x = sym.symbols('x')
+    dexp_dx = sym.diff(exp(x), x)
+    return sym.lambdify(x, dexp_dx)
+

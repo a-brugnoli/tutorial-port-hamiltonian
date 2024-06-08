@@ -68,8 +68,9 @@ def implicit_midpoint(x_0, M, A, dt, nt, bcs_essential = {}):
 
 
 def stormer_verlet(var1_0, var2_0, M_2, A_1, A_2, \
-            dt, nt, bcs_essential = {}):
+            dt, nt, method='primal', bcs_essential = {}):
     
+    assert method=='primal' or method=='dual'
     var1_solution = np.zeros((nt+1, len(var1_0)))
     var1_solution[0, :] = var1_0
 
@@ -79,49 +80,34 @@ def stormer_verlet(var1_0, var2_0, M_2, A_1, A_2, \
     var1_old = var1_0
     var2_old = var2_0
 
-    var2_old_midpoint = var2_old + dt/2 * solve_bcs(M_2, A_2 @ var1_old)
-    
-    for n in range(nt):
-        var1_new = var1_old + dt * A_1 @ var2_old_midpoint
+    if method=='primal':
+        var2_old_midpoint = var2_old + dt/2 * solve_bcs(M_2, A_2 @ var1_old)
         
-        var2_new_midpoint = var2_old_midpoint + dt * solve_bcs(M_2, A_2 @ var1_new)
-        var2_new = 0.5*(var2_old_midpoint + var2_new_midpoint)
+        for n in range(nt):
+            var1_new = var1_old + dt * A_1 @ var2_old_midpoint
+            
+            var2_new_midpoint = var2_old_midpoint + dt * solve_bcs(M_2, A_2 @ var1_new)
+            var2_new = 0.5*(var2_old_midpoint + var2_new_midpoint)
 
-        var1_solution[n+1, :] = var1_new
-        var2_solution[n+1, :] = var2_new
+            var1_solution[n+1, :] = var1_new
+            var2_solution[n+1, :] = var2_new
 
-        var1_old = var1_new
-        var2_old_midpoint = var2_new_midpoint
+            var1_old = var1_new
+            var2_old_midpoint = var2_new_midpoint
+
+    else:
+        var1_old_midpoint = var1_old + dt/2 * A_1 @ var2_old
+    
+        for n in range(nt):
+            var2_new = var2_old + dt * spsolve(M_2, A_2 @ var1_old_midpoint)
+            
+            var1_new_midpoint = var1_old_midpoint + dt * A_1 @ var2_new
+            var1_new = 0.5*(var1_old_midpoint + var1_new_midpoint)
+
+            var1_solution[n+1, :] = var1_new
+            var2_solution[n+1, :] = var2_new
+
+            var2_old = var2_new
+            var1_old_midpoint = var1_new_midpoint
     
     return var1_solution, var2_solution
-
-
-def stormer_verlet_dual(var1_0, var2_0, M_2, A_1, A_2, \
-                        dt, nt, bcs_essential = {}):
-    
-    var1_solution = np.zeros((nt+1, len(var1_0)))
-    var1_solution[0, :] = var1_0
-
-    var2_solution = np.zeros((nt+1, len(var2_0)))
-    var2_solution[0, :] = var2_0
-
-    var1_old = var1_0
-    var2_old = var2_0
-
-    var1_old_midpoint = var1_old + dt/2 * A_1 @ var2_old
-    
-    for n in range(nt):
-        var2_new = var2_old + dt * spsolve(M_2, A_2 @ var1_old_midpoint)
-        
-        var1_new_midpoint = var1_old_midpoint + dt * A_1 @ var2_new
-        var1_new = 0.5*(var1_old_midpoint + var1_new_midpoint)
-
-        var1_solution[n+1, :] = var1_new
-        var2_solution[n+1, :] = var2_new
-
-        var2_old = var2_new
-        var1_old_midpoint = var1_new_midpoint
-    
-    return var1_solution, var2_solution
-
-
