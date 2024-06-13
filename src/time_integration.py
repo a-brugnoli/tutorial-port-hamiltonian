@@ -1,5 +1,5 @@
 import numpy as np
-from src.linear_algebra import solve_bcs, derive_expression
+from src.linear_algebra import solve_bcs
 from scipy.sparse.linalg import spsolve
 
 def _valid_bc_keys(dictionary):
@@ -9,15 +9,9 @@ def _valid_bc_keys(dictionary):
             return False
     return True
 
-def newmark(q0, v0, M, K, dt, nt, bcs_displacement = {}, gamma=0.5, beta=0.25):
+def newmark(q0, v0, M, K, dt, nt, bcs_acceleration = {}, gamma=0.5, beta=0.25):
     assert beta >= 0 and gamma >= 0.5, "The Newmark parameters are invalid"
-    assert _valid_bc_keys(bcs_displacement), "The bcs dictionary contains invalid keys"
-    
-    bcs_acc = bcs_displacement.copy()
-
-    for key_bc, value_disp_bc in bcs_displacement:
-        value_acc_bc = derive_expression(derive_expression(value_disp_bc))
-        bcs_acc[key_bc] = value_acc_bc
+    assert _valid_bc_keys(bcs_acceleration), "The bcs dictionary contains invalid keys"
 
     q_solution = np.zeros((nt+1, len(q0)))
     q_solution[0, :] = q0
@@ -68,46 +62,32 @@ def implicit_midpoint(x_0, M, A, dt, nt, bcs_essential = {}):
 
 
 def stormer_verlet(var1_0, var2_0, M_2, A_1, A_2, \
-            dt, nt, method='primal', bcs_essential = {}):
-    
-    assert method=='primal' or method=='dual'
+            dt, nt, bcs_essential = {}):
+    """
+    Compute the solution using the Stormer Verlet Method
+    The first variable is evaluated at integer time steps, 
+    while the second is evaluated on half-integers.
+    """
     var1_solution = np.zeros((nt+1, len(var1_0)))
-    var1_solution[0, :] = var1_0
-
     var2_solution = np.zeros((nt+1, len(var2_0)))
-    var2_solution[0, :] = var2_0
 
     var1_old = var1_0
     var2_old = var2_0
 
-    if method=='primal':
-        var2_old_midpoint = var2_old + dt/2 * solve_bcs(M_2, A_2 @ var1_old)
-        
-        for n in range(nt):
-            var1_new = var1_old + dt * A_1 @ var2_old_midpoint
-            
-            var2_new_midpoint = var2_old_midpoint + dt * solve_bcs(M_2, A_2 @ var1_new)
-            var2_new = 0.5*(var2_old_midpoint + var2_new_midpoint)
+    var1_solution[0, :] = var1_old
 
-            var1_solution[n+1, :] = var1_new
-            var2_solution[n+1, :] = var2_new
+    var2_old_midpoint = var2_old + dt/2 * solve_bcs(M_2, A_2 @ var1_old)
+    var2_solution[0, :] = var2_old_midpoint
 
-            var1_old = var1_new
-            var2_old_midpoint = var2_new_midpoint
+    for n in range(nt):
+        var1_new = var1_old + dt * A_1 @ var2_old_midpoint
+        var2_new_midpoint = var2_old_midpoint + dt * solve_bcs(M_2, A_2 @ var1_new)
 
-    else:
-        var1_old_midpoint = var1_old + dt/2 * A_1 @ var2_old
-    
-        for n in range(nt):
-            var2_new = var2_old + dt * spsolve(M_2, A_2 @ var1_old_midpoint)
-            
-            var1_new_midpoint = var1_old_midpoint + dt * A_1 @ var2_new
-            var1_new = 0.5*(var1_old_midpoint + var1_new_midpoint)
+        var1_solution[n+1, :] = var1_new
+        var2_solution[n+1, :] = var2_new_midpoint
 
-            var1_solution[n+1, :] = var1_new
-            var2_solution[n+1, :] = var2_new
+        var1_old = var1_new
+        var2_old_midpoint = var2_new_midpoint
 
-            var2_old = var2_new
-            var1_old_midpoint = var1_new_midpoint
     
     return var1_solution, var2_solution

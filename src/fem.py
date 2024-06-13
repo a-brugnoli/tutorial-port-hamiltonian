@@ -46,7 +46,7 @@ def discrete_gradient(coordinates):
 
     return D
 
-def stiffness_matrix_lagrange(coordinates, stiffness=1):
+def stiffness_matrix(coordinates, stiffness=1):
 
     n_nodes = coordinates.shape[0]
     n_elements = n_nodes - 1
