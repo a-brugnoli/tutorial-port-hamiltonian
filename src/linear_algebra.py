@@ -40,4 +40,6 @@ if __name__=="__main__":
     # Remove the specified row and column
     new_sparse_matrix = remove_row_column(sparse_matrix, row_to_remove, col_to_remove)
 
-    print(new_sparse_matrix.toarray())
+    assert (new_sparse_matrix.toarray()==np.array([[1, 13], [5, 15]])).all()
+    
+    print("Successful test")
